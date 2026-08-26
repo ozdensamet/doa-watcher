@@ -46,8 +46,8 @@ Ayarları girip **Kaydet**'e basın. Son adım, OTP'nin okunabilmesi için:
 
 **Sistem Ayarları → Gizlilik ve Güvenlik → Tam Disk Erişimi → `+` → `~/doa-watcher/DOAWatcher.app`**
 
-Uygulama noterlidir, ilk açılışta güvenlik uyarısı çıkmaz. Ana ekrandaki
-gösterge, iznin gerçekten çalışıp çalışmadığını anlık gösterir.
+Uygulama imzalı ve doğrulanmıştır; ilk açılışta güvenlik uyarısı çıkmaz.
+Ana ekrandaki gösterge, iznin gerçekten çalışıp çalışmadığını anlık gösterir.
 
 **Kaynaktan derleme:**
 
