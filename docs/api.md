@@ -31,16 +31,15 @@ X-Payment-Api-Version: v7
 `X-DEVICE-ID` ve `X-ORIGINAL-DEVICE-ID` kaynak kodda sabit UUID olarak duruyor.
 Kendi kurulumunuzda değiştirmek isterseniz `get_headers()` içinden düzenleyin.
 
-## En kritik ayrıntı: Authorization başlığı
+## Authorization başlığı
 
-Token **`Bearer ` öneki olmadan**, ham JWT olarak gönderilir:
+Token **`Bearer ` öneki olmadan**, ham JWT olarak gönderilir. Bu davranış
+standart dışıdır:
 
 ```python
 headers["Authorization"] = token          # dogru
 headers["Authorization"] = f"Bearer {token}"   # 401 doner
 ```
-
-Bu, standart dışı bir davranış ve entegrasyonda en çok vakit kaybettiren nokta.
 
 ## 1. OTP gönder
 

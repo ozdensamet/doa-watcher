@@ -94,7 +94,7 @@ ORDER BY m.date DESC
 LIMIT 1;
 ```
 
-### İki tuzak
+### İki önemli ayrıntı
 
 **1. Mesaj metni `text` sütununda olmayabilir.** Modern macOS sürümlerinde metin
 `attributedBody` adlı ikili (NSAttributedString arşivi) sütunda saklanıyor.
@@ -124,9 +124,6 @@ Kod, okuduğu mesajın 90 saniyeden eski olmamasını şart koşuyor — böylec
 > Bu bölüm uygulamayı **kaynaktan derleyenleri** ilgilendirir. Hazır sürümü
 > indiren kullanıcının sertifikaya veya geliştirici hesabına ihtiyacı yoktur.
 
-Bu projedeki en sinsi sorun buydu; benzer bir işe girişen herkes aynı duvara
-toslar.
-
 ### Sorun
 
 Messages veritabanını okumak Tam Disk Erişimi (Full Disk Access) gerektirir.
@@ -148,8 +145,8 @@ eşleşmez ve izin sessizce çalışmaz hâle gelir. Loglarda şöyle görünür
 OTP deneme 1/4: DB hatasi: authorization denied
 ```
 
-Sistem Ayarları'nda uygulama hâlâ listede ve tik işareti duruyor olur — bu
-yüzden hata çok kafa karıştırıcıdır.
+Bu durumda Sistem Ayarları'nda uygulama hâlâ listede görünür ve tik işareti
+açık kalır; izin fiilen çalışmaz.
 
 ### Çözüm
 
@@ -342,7 +339,7 @@ açıp **Kaydet**'e basın; plist yeniden üretilir.
 ### HTTP 401
 
 Token'ın `Bearer ` önekiyle gönderilmediğinden emin olun. API ham JWT bekliyor
-([ayrıntı](api.md#en-kritik-ayrıntı-authorization-başlığı)).
+([ayrıntı](api.md#authorization-başlığı)).
 
 ## Geliştirme günlüğü
 

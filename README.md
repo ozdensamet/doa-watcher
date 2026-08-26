@@ -19,7 +19,6 @@
   <img src="https://img.shields.io/badge/swift-5-orange" alt="Swift">
   <img src="https://img.shields.io/badge/python-3-blue" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
-  <img src="https://img.shields.io/github/v/release/ozdensamet/doa-watcher?color=166534" alt="Release">
 </p>
 
 ---
@@ -27,10 +26,10 @@
 ## Özellikler
 
 - **Tam otomatik giriş** — SMS ile gelen OTP kodunu Mac'in Mesajlar veritabanından okur, elle kod girmek yok
-- **Akıllı bildirim** — yalnızca gidebileceğiniz bir makine varken e-posta atar, boşuna yola çıkarmaz
+- **Akıllı bildirim** — yalnızca uygun makine varken e-posta gönderir; tüm makineler dolu veya kapalıysa e-posta gelmez
 - **PET / Cam / Alüminyum** — izlenecek türleri seçin, doluluk eşiğini belirleyin
 - **Yerleşik harita** — arama merkezini haritayı sürükleyerek seçin
-- **Esnek zamanlama** — günlük kontrol saatlerini tek tek ekleyin, launchd gerisini halleder
+- **Esnek zamanlama** — günlük kontrol saatlerini tek tek belirleyin; kontroller launchd ile zamanlanır
 - **Arka planda çalışır** — uygulamanın açık kalması gerekmez
 - **Sıfır bağımlılık** — Swift + Python standart kütüphane, paket kurulumu yok
 
@@ -89,7 +88,7 @@ Her şey yerelde çalışır. Telefon, e-posta ve Gmail şifresi yalnızca Mac'i
 
 ## Dokümantasyon
 
-- [DOA API notları](docs/api.md) — endpoint'ler, başlıklar, bilinen tuzaklar
+- [DOA API notları](docs/api.md) — endpoint'ler, başlıklar, yanıt yapısı
 - [Teknik notlar](docs/teknik-notlar.md) — yapılandırma, OTP okuma, kod imzalama / TCC, launchd, derleme ve dağıtım, sorun giderme
 
 ## Lisans
