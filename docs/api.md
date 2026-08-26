@@ -73,7 +73,7 @@ POST /v2/auth/verify-login-otp
 Token yanıtta `tokenResource.access_token` içinde. Kod yedek olarak
 `accessToken`, `data.access_token` gibi varyasyonları da deniyor.
 
-Token ömrü kısa (~10 dakika), yenileme akışı kullanılmıyor — her kontrol
+Token ömrü kısa (~10 dakika), yenileme akışı kullanılmıyor - her kontrol
 turunda sıfırdan giriş yapılıyor.
 
 ## 3. Makine sorgula
@@ -119,7 +119,7 @@ Authorization: <ham JWT>
 | Alan | Anlamı |
 |---|---|
 | `machineStatus` | `0` çevrimiçi, diğer her değer kapalı sayılır |
-| `binList[].contentType` | Göz türü — `pet`, `glass`, `aluminum` |
+| `binList[].contentType` | Göz türü - `pet`, `glass`, `aluminum` |
 | `binList[].level` | Doluluk yüzdesi; eşiğin üstü "dolu" |
 | `binList[].state` | Gözün aktif olup olmadığı |
 | `userDistanceKm` | `userLat`/`userLon` noktasına uzaklık |

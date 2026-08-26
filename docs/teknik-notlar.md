@@ -12,7 +12,7 @@
 ## Yapılandırma
 
 Tüm ayarlar arayüzden yönetilir ve `~/doa-watcher/config.json` dosyasına yazılır.
-Dosya `.gitignore` içindedir — şifre içerdiği için repoya girmez. Elle düzenlemek
+Dosya `.gitignore` içindedir - şifre içerdiği için repoya girmez. Elle düzenlemek
 isterseniz şablon: `config.example.json`.
 
 | Anahtar | Tip | Açıklama |
@@ -69,7 +69,7 @@ cat ~/doa-watcher/logs/launchd-stderr.log          # launchd hataları
 Ana anahtar kapatıldığında üç katmanlı durdurma devreye girer:
 
 1. `launchctl unload` ile iş launchd'den kaldırılır
-2. plist dosyası `.disabled` uzantısına taşınır — yeniden başlatmada da yüklenmez
+2. plist dosyası `.disabled` uzantısına taşınır - yeniden başlatmada da yüklenmez
 3. Python betiği her çalışmada `enabled` bayrağını kontrol eder, kapalıysa çıkar
 
 Anahtar kapalıyken bile **Şimdi Kontrol Et** çalışmaya devam eder.
@@ -114,7 +114,7 @@ APPLE_EPOCH = 978307200          # 2001-01-01 ile 1970-01-01 arası saniye
 unix_ts = apple_date / 1_000_000_000 + APPLE_EPOCH
 ```
 
-Kod, okuduğu mesajın 90 saniyeden eski olmamasını şart koşuyor — böylece
+Kod, okuduğu mesajın 90 saniyeden eski olmamasını şart koşuyor - böylece
 önceki turdan kalma bir kodu yanlışlıkla kullanmıyor.
 
 > Bu sorgunun çalışabilmesi için okuyan sürecin **Tam Disk Erişimi** olması şart.
@@ -137,7 +137,7 @@ Uygulama **ad-hoc** imzalanırsa (`codesign -s -`) TCC'nin kaydettiği kural şu
 cdhash H"fa3df386409564b94936551439e355bf149c5592"
 ```
 
-`cdhash`, derlenmiş ikili dosyanın özetidir — **her yeni derlemede değişir.**
+`cdhash`, derlenmiş ikili dosyanın özetidir - **her yeni derlemede değişir.**
 Sonuç: kodda tek satır değiştirip yeniden derlediğinizde TCC kaydı artık
 eşleşmez ve izin sessizce çalışmaz hâle gelir. Loglarda şöyle görünür:
 
@@ -158,7 +158,7 @@ identifier "com.ozden.doa-watcher" and anchor apple generic
   and certificate leaf[subject.OU] = "TEAMID"
 ```
 
-Bu kuralda `cdhash` yok — paket kimliği ve ekip numarası derlemeden derlemeye
+Bu kuralda `cdhash` yok - paket kimliği ve ekip numarası derlemeden derlemeye
 değişmediği için **izin bir kez verilir ve kalıcı olur.**
 
 ### İzin durumunu doğrulama
@@ -192,7 +192,7 @@ sqlite3 /Library/Application\ Support/com.apple.TCC/TCC.db \
 ### Alt süreçler izni miras alır
 
 Program Messages veritabanını doğrudan Swift'ten okumuyor; `python3`'ü alt
-süreç olarak başlatıyor. Python'a ayrıca izin vermek **gerekmez** — macOS
+süreç olarak başlatıyor. Python'a ayrıca izin vermek **gerekmez** - macOS
 TCC değerlendirmesinde "sorumlu süreç" olarak üst uygulamayı (imzalı `.app`)
 kabul eder.
 
@@ -272,7 +272,7 @@ swiftc -swift-version 5 -O \
 codesign -s "Developer ID Application: ..." -f --timestamp --options runtime DOAWatcher.app
 ```
 
-> **Ad-hoc imza (`codesign -s -`) kullanmayın** — nedeni
+> **Ad-hoc imza (`codesign -s -`) kullanmayın** - nedeni
 > [yukarıda](#kod-imzalama-ve-tam-disk-erişimi). `--options runtime`
 > (hardened runtime) noterleme için zorunludur.
 
@@ -300,7 +300,7 @@ NOTARY_PROFILE=doa-notary ./build.sh --release
 ### `DB hatasi: authorization denied`
 
 Tam Disk Erişimi eşleşmiyor. Uygulamayı yeniden derlediyseniz ve ad-hoc
-imzalıysa beklenen durum — [ilgili bölüme](#kod-imzalama-ve-tam-disk-erişimi)
+imzalıysa beklenen durum - [ilgili bölüme](#kod-imzalama-ve-tam-disk-erişimi)
 bakın. Çözüm: Developer ID ile imzalayın, sonra Sistem Ayarları'ndaki eski
 kaydı `−` ile silip `+` ile yeniden ekleyin.
 
@@ -321,7 +321,7 @@ olabilir; loglarda `OTP gonderildi` satırının varlığına bakın.
 
 ### E-posta gitmiyor
 
-Önce logu okuyun — büyük ihtimalle hata yoktur, sadece uygun makine
+Önce logu okuyun - büyük ihtimalle hata yoktur, sadece uygun makine
 bulunamamıştır (`Uygun makine yok, bildirim atlaniyor`). Gerçek bir hata varsa
 `Email hatasi:` satırı görünür. En sık sebep normal Gmail şifresinin uygulama
 şifresi yerine kullanılmasıdır.
@@ -343,23 +343,23 @@ Token'ın `Bearer ` önekiyle gönderilmediğinden emin olun. API ham JWT bekliy
 
 ## Geliştirme günlüğü
 
-Projenin bugünkü hâline nasıl geldiğinin kısa özeti — denenip bırakılan
+Projenin bugünkü hâline nasıl geldiğinin kısa özeti - denenip bırakılan
 yaklaşımlar ve sebepleri.
 
-1. **Playwright ile tarayıcı otomasyonu (bırakıldı)** — Web arayüzünü gerçek
+1. **Playwright ile tarayıcı otomasyonu (bırakıldı)** - Web arayüzünü gerçek
    tarayıcıda sürmek çalışıyordu ama ağır ve kırılgandı. Ağ trafiği incelenip
    API doğrudan çağrılabilir olunca bırakıldı.
-2. **Bulut tabanlı zamanlama (bırakıldı)** — OTP okumak için Mac'teki Messages
+2. **Bulut tabanlı zamanlama (bırakıldı)** - OTP okumak için Mac'teki Messages
    veritabanına erişim şart; bulutun böyle bir erişimi yok. İşin tamamı Mac'e
    taşındı.
-3. **Kabuk betiği + `launchd` (yetersiz)** — `launchd` doğrudan `python3`
+3. **Kabuk betiği + `launchd` (yetersiz)** - `launchd` doğrudan `python3`
    çağırıyordu; Tam Disk Erişimi verilecek bir uygulama paketi olmadığı için
    çalışmadı.
-4. **İmzasız `.app` sarmalayıcı (yetersiz)** — İzin verildi ama imzasız
+4. **İmzasız `.app` sarmalayıcı (yetersiz)** - İzin verildi ama imzasız
    paketler TCC tarafından güvenilir kimlik sayılmıyor.
-5. **Ad-hoc imzalı SwiftUI uygulaması (kısmen)** — Çalıştı ama her yeniden
+5. **Ad-hoc imzalı SwiftUI uygulaması (kısmen)** - Çalıştı ama her yeniden
    derlemede izin bozuldu (cdhash sorunu).
-6. **Developer ID ile imzalama (bugünkü çözüm)** — TCC kuralı kimlik + ekip
+6. **Developer ID ile imzalama (bugünkü çözüm)** - TCC kuralı kimlik + ekip
    numarasına dayandı, izin kalıcı hâle geldi.
 
 **Çıkarılan ders:** macOS'ta TCC izni gerektiren bir yardımcı araç yazıyorsanız,

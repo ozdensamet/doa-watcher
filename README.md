@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <b>DOA depozito iade makinelerini otomatik izler — boş göz bulununca haber verir.</b>
+  <b>DOA depozito iade makinelerini otomatik izler - boş göz bulununca haber verir.</b>
 </p>
 
 <p align="center">
@@ -25,17 +25,17 @@
 
 ## Özellikler
 
-- **Tam otomatik giriş** — SMS ile gelen OTP kodunu Mac'in Mesajlar veritabanından okur, elle kod girmek yok
-- **Akıllı bildirim** — yalnızca uygun makine varken e-posta gönderir; tüm makineler dolu veya kapalıysa e-posta gelmez
-- **PET / Cam / Alüminyum** — izlenecek türleri seçin, doluluk eşiğini belirleyin
-- **Yerleşik harita** — arama merkezini haritayı sürükleyerek seçin
-- **Esnek zamanlama** — günlük kontrol saatlerini tek tek belirleyin; kontroller launchd ile zamanlanır
-- **Arka planda çalışır** — uygulamanın açık kalması gerekmez
-- **Sıfır bağımlılık** — Swift + Python standart kütüphane, paket kurulumu yok
+- **Tam otomatik giriş** - SMS ile gelen OTP kodunu Mac'in Mesajlar veritabanından okur, elle kod girmek yok
+- **Akıllı bildirim** - yalnızca uygun makine varken e-posta gönderir; tüm makineler dolu veya kapalıysa e-posta gelmez
+- **PET / Cam / Alüminyum** - izlenecek türleri seçin, doluluk eşiğini belirleyin
+- **Yerleşik harita** - arama merkezini haritayı sürükleyerek seçin
+- **Esnek zamanlama** - günlük kontrol saatlerini tek tek belirleyin; kontroller launchd ile zamanlanır
+- **Arka planda çalışır** - uygulamanın açık kalması gerekmez
+- **Sıfır bağımlılık** - Swift + Python standart kütüphane, paket kurulumu yok
 
 ## Kurulum
 
-[DOA-Watcher.zip](https://github.com/ozdensamet/doa-watcher/releases/latest/download/DOA-Watcher.zip)'i indirip ana dizininize açın — klasör `~/doa-watcher` konumuna oturmalı:
+[DOA-Watcher.zip](https://github.com/ozdensamet/doa-watcher/releases/latest/download/DOA-Watcher.zip)'i indirip ana dizininize açın. Zip'ten çıkan `doa-watcher` klasörü `~/doa-watcher` yolunda olmalı:
 
 ```bash
 ditto -x -k ~/Downloads/DOA-Watcher.zip ~
@@ -56,14 +56,14 @@ git clone https://github.com/ozdensamet/doa-watcher.git ~/doa-watcher
 cd ~/doa-watcher && ./build.sh
 ```
 
-> Kaynaktan derlemede Developer ID sertifikası önerilir — ad-hoc imza her
+> Kaynaktan derlemede Developer ID sertifikası önerilir - ad-hoc imza her
 > derlemede Tam Disk Erişimi iznini bozar. [Neden?](docs/teknik-notlar.md#kod-imzalama-ve-tam-disk-erişimi)
 
 ## Gereksinimler
 
 - macOS 14+ ve telefon numarasıyla kayıtlı bir DOA hesabı
 - iPhone → Mac SMS yönlendirmesi (Ayarlar → Mesajlar → Metin Mesajı Yönlendirme)
-- Bildirimler için Gmail [uygulama şifresi](https://myaccount.google.com/apppasswords) — arayüzden bağlantısı var
+- Bildirimler için Gmail [uygulama şifresi](https://myaccount.google.com/apppasswords) - arayüzden bağlantısı var
 
 ## Nasıl çalışır
 
@@ -88,8 +88,8 @@ Her şey yerelde çalışır. Telefon, e-posta ve Gmail şifresi yalnızca Mac'i
 
 ## Dokümantasyon
 
-- [DOA API notları](docs/api.md) — endpoint'ler, başlıklar, yanıt yapısı
-- [Teknik notlar](docs/teknik-notlar.md) — yapılandırma, OTP okuma, kod imzalama / TCC, launchd, derleme ve dağıtım, sorun giderme
+- [DOA API notları](docs/api.md) - endpoint'ler, başlıklar, yanıt yapısı
+- [Teknik notlar](docs/teknik-notlar.md) - yapılandırma, OTP okuma, kod imzalama / TCC, launchd, derleme ve dağıtım, sorun giderme
 
 ## Lisans
 
