@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import MapKit
 
 // MARK: - Config
 // Kisisel degerler config.json'dan gelir (bkz. config.example.json).
@@ -13,9 +14,7 @@ struct DOAConfig: Codable {
     var distance: Int = 2000
     var userLat: Double = 41.0082
     var userLon: Double = 28.9784
-    var morning_hours: [Int] = [7, 8, 9, 10, 11]
-    var evening_hours: [Int] = [17, 18, 19, 20, 21]
-    var check_minutes: [Int] = [0, 30]
+    var check_times: [String] = ["09:30", "12:30", "18:30"]
     var random_delay_max: Int = 600
     var watch_materials: [String] = ["pet", "glass"]
     var full_threshold: Int = 90
@@ -25,9 +24,12 @@ struct DOAConfig: Codable {
 
     enum CodingKeys: String, CodingKey {
         case phone, email, app_password, lat, lon, distance, userLat, userLon
-        case morning_hours, evening_hours, check_minutes, random_delay_max
+        case check_times, random_delay_max
         case watch_materials, full_threshold, enabled
     }
+
+    // Eski yapilandirma bicimi (saat listeleri x dakika listesi) - okumada donusturulur
+    enum LegacyKeys: String, CodingKey { case morning_hours, evening_hours, check_minutes }
 
     init() {}
 
@@ -43,9 +45,22 @@ struct DOAConfig: Codable {
         distance = try c.decodeIfPresent(Int.self, forKey: .distance) ?? d.distance
         userLat = try c.decodeIfPresent(Double.self, forKey: .userLat) ?? d.userLat
         userLon = try c.decodeIfPresent(Double.self, forKey: .userLon) ?? d.userLon
-        morning_hours = try c.decodeIfPresent([Int].self, forKey: .morning_hours) ?? d.morning_hours
-        evening_hours = try c.decodeIfPresent([Int].self, forKey: .evening_hours) ?? d.evening_hours
-        check_minutes = try c.decodeIfPresent([Int].self, forKey: .check_minutes) ?? d.check_minutes
+        if let times = try c.decodeIfPresent([String].self, forKey: .check_times), !times.isEmpty {
+            check_times = times.sorted()
+        } else {
+            // Eski bicim: (sabah + aksam saatleri) x dakikalar -> "SS:DD" listesine cevir
+            let lc = try decoder.container(keyedBy: LegacyKeys.self)
+            let hours = ((try? lc.decode([Int].self, forKey: .morning_hours)) ?? [])
+                      + ((try? lc.decode([Int].self, forKey: .evening_hours)) ?? [])
+            let mins = (try? lc.decode([Int].self, forKey: .check_minutes)) ?? []
+            if !hours.isEmpty && !mins.isEmpty {
+                check_times = hours.flatMap { h in
+                    mins.map { m in String(format: "%02d:%02d", h, m) }
+                }.sorted()
+            } else {
+                check_times = d.check_times
+            }
+        }
         random_delay_max = try c.decodeIfPresent(Int.self, forKey: .random_delay_max) ?? d.random_delay_max
         watch_materials = try c.decodeIfPresent([String].self, forKey: .watch_materials) ?? d.watch_materials
         full_threshold = try c.decodeIfPresent(Int.self, forKey: .full_threshold) ?? d.full_threshold
@@ -130,6 +145,17 @@ func parseLogStep(_ line: String) -> LogStep {
     }
     return LogStep(message: msg, icon: "circle.fill", color: .secondary)
 }
+// MARK: - Tam Disk Erisimi
+// Mesajlar veritabanini acmayi deneyerek iznin gercekte calisip calismadigini olcer.
+// TCC engellerse open() EPERM doner; Sistem Ayarlari'ndaki tik isareti yaniltici
+// olabilecegi icin (bkz. README, cdhash konusu) dogrudan denemek en guvenilir yontem.
+func checkFullDiskAccess() -> Bool? {
+    let path = NSHomeDirectory() + "/Library/Messages/chat.db"
+    let fd = open(path, O_RDONLY)
+    if fd >= 0 { close(fd); return true }
+    return (errno == EPERM || errno == EACCES) ? false : nil
+}
+
 // MARK: - Launchd Yonetimi
 var plistPath: String { NSHomeDirectory() + "/Library/LaunchAgents/com.ozden.doa-watcher.plist" }
 var plistDisabledPath: String { plistPath + ".disabled" }
@@ -156,10 +182,10 @@ func applySchedule(config: DOAConfig) {
     let home = NSHomeDirectory()
     let exec = home + "/doa-watcher/DOAWatcher.app/Contents/MacOS/DOAWatcher"
     var intervals = ""
-    for hour in config.morning_hours + config.evening_hours {
-        for minute in config.check_minutes {
-            intervals += "        <dict><key>Hour</key><integer>\(hour)</integer><key>Minute</key><integer>\(minute)</integer></dict>\n"
-        }
+    for t in config.check_times {
+        let parts = t.split(separator: ":")
+        guard parts.count == 2, let hour = Int(parts[0]), let minute = Int(parts[1]) else { continue }
+        intervals += "        <dict><key>Hour</key><integer>\(hour)</integer><key>Minute</key><integer>\(minute)</integer></dict>\n"
     }
     let plist = """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -197,23 +223,24 @@ func applySchedule(config: DOAConfig) {
 // Bir sonraki planli kontrolun zamani
 func nextRunDescription(config: DOAConfig) -> String {
     if !config.enabled { return "Duraklatildi" }
-    let hours = Array(Set(config.morning_hours + config.evening_hours)).sorted()
-    let mins = Array(Set(config.check_minutes)).sorted()
-    if hours.isEmpty || mins.isEmpty { return "Zamanlama tanimli degil" }
+    let times: [(Int, Int)] = config.check_times.compactMap {
+        let p = $0.split(separator: ":")
+        guard p.count == 2, let h = Int(p[0]), let m = Int(p[1]) else { return nil }
+        return (h, m)
+    }.sorted { $0.0 == $1.0 ? $0.1 < $1.1 : $0.0 < $1.0 }
+    if times.isEmpty { return "Zamanlama tanimli degil" }
     let cal = Calendar.current
     let now = Date()
     let fmt = DateFormatter()
     fmt.locale = Locale(identifier: "tr_TR")
     for dayOffset in 0...1 {
         guard let base = cal.date(byAdding: .day, value: dayOffset, to: now) else { continue }
-        for h in hours {
-            for m in mins {
-                var comp = cal.dateComponents([.year, .month, .day], from: base)
-                comp.hour = h; comp.minute = m; comp.second = 0
-                if let d = cal.date(from: comp), d > now {
-                    fmt.dateFormat = dayOffset == 0 ? "'bugun' HH:mm" : "'yarin' HH:mm"
-                    return fmt.string(from: d)
-                }
+        for (h, m) in times {
+            var comp = cal.dateComponents([.year, .month, .day], from: base)
+            comp.hour = h; comp.minute = m; comp.second = 0
+            if let d = cal.date(from: comp), d > now {
+                fmt.dateFormat = dayOffset == 0 ? "'bugun' HH:mm" : "'yarin' HH:mm"
+                return fmt.string(from: d)
             }
         }
     }
@@ -226,11 +253,15 @@ struct SettingsView: View {
     @State private var statusOk = true
     @State private var isChecking = false
     @State private var logSteps: [LogStep] = []
-    @State private var morningTxt: String = ""
-    @State private var eveningTxt: String = ""
-    @State private var minutesTxt: String = ""
+    @State private var newTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var nextRunTxt: String = "-"
     @State private var ready = false
+    @State private var mapCamera: MapCameraPosition = .automatic
+    @State private var fdaGranted: Bool? = nil
+
+    var searchCenter: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: config.lat, longitude: config.lon)
+    }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -238,9 +269,9 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     // Header
                     HStack(spacing: 12) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 28))
-                            .foregroundStyle(config.enabled ? .blue : .gray)
+                        Image(nsImage: NSApp.applicationIconImage)
+                            .resizable()
+                            .frame(width: 44, height: 44)
                         VStack(alignment: .leading) {
                             Text("DOA Watcher").font(.title.bold())
                             Text("Depozito iade makinesi takip sistemi")
@@ -274,6 +305,40 @@ struct SettingsView: View {
                         }.padding(6)
                     }
 
+                    // Tam Disk Erisimi durumu
+                    GroupBox {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 12) {
+                                Circle()
+                                    .fill(fdaGranted == true ? Color.green : (fdaGranted == false ? Color.red : Color.orange))
+                                    .frame(width: 10, height: 10)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(fdaGranted == true
+                                         ? "Tam Disk Erisimi verildi"
+                                         : (fdaGranted == false ? "Tam Disk Erisimi verilmedi" : "Tam Disk Erisimi belirlenemedi"))
+                                        .font(.headline)
+                                    Text(fdaGranted == true
+                                         ? "SMS'teki OTP kodu Mesajlar veritabanindan okunabilir"
+                                         : (fdaGranted == false
+                                            ? "OTP okunamaz - Sistem Ayarlari'ndan bu uygulamaya izin verin"
+                                            : "Mesajlar veritabani bulunamadi - SMS senkronizasyonunu kontrol edin"))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Button(action: { fdaGranted = checkFullDiskAccess() }) {
+                                    Image(systemName: "arrow.clockwise")
+                                }.buttonStyle(.borderless).help("Durumu yenile")
+                                if fdaGranted != true {
+                                    Button("Sistem Ayarlarini Ac") {
+                                        if let u = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
+                                            NSWorkspace.shared.open(u)
+                                        }
+                                    }
+                                }
+                            }
+                        }.padding(6)
+                    }
+
                     Divider()
                     // Hesap
                     GroupBox {
@@ -291,6 +356,13 @@ struct SettingsView: View {
                                 SecureField("xxxx xxxx xxxx xxxx", text: $config.app_password)
                                     .textFieldStyle(.roundedBorder).frame(maxWidth: 260)
                             }
+                            HStack(spacing: 4) {
+                                Text("Normal Gmail sifreniz calismaz.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                Link("Uygulama sifresi olusturun",
+                                     destination: URL(string: "https://myaccount.google.com/apppasswords")!)
+                                    .font(.caption)
+                            }
                         }.padding(6)
                     }
                     // Konum
@@ -299,12 +371,32 @@ struct SettingsView: View {
                             HStack {
                                 Label("Konum", systemImage: "location.circle").font(.headline)
                                 Spacer()
-                                Button(action: openMaps) {
-                                    Label("Haritada Goster", systemImage: "map")
+                                Button(action: centerMap) {
+                                    Label("Merkeze Git", systemImage: "scope")
                                 }.buttonStyle(.borderless).font(.caption)
                             }
-                            Text("Makine aranacak merkez nokta. Google Maps'te bir noktaya sag tiklayip koordinatlari kopyalayabilirsiniz.")
+                            Text("Haritayi surukleyerek kirmizi isareti arama merkezine getirin. Mavi daire arama yaricapini gosterir.")
                                 .font(.caption).foregroundStyle(.secondary)
+                            ZStack {
+                                Map(position: $mapCamera) {
+                                    MapCircle(center: searchCenter, radius: Double(config.distance))
+                                        .foregroundStyle(.blue.opacity(0.1))
+                                        .stroke(.blue.opacity(0.5), lineWidth: 1)
+                                }
+                                // Merkez her zaman ekranin ortasindaki isarettir;
+                                // macOS'ta Map tiklamayi kendisi yuttugu icin
+                                // tikla-sec yerine surukle-birak kalibi kullaniliyor
+                                .onMapCameraChange(frequency: .continuous) { context in
+                                    config.lat = (context.camera.centerCoordinate.latitude * 1e6).rounded() / 1e6
+                                    config.lon = (context.camera.centerCoordinate.longitude * 1e6).rounded() / 1e6
+                                }
+                                Image(systemName: "scope")
+                                    .font(.system(size: 24, weight: .semibold))
+                                    .foregroundStyle(.red)
+                                    .allowsHitTesting(false)
+                            }
+                            .frame(height: 200)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                             HStack(spacing: 16) {
                                 LabeledContent("Enlem") {
                                     TextField("41.0082", value: $config.lat, format: .number)
@@ -330,18 +422,34 @@ struct SettingsView: View {
                     GroupBox {
                         VStack(alignment: .leading, spacing: 10) {
                             Label("Zamanlama", systemImage: "clock").font(.headline)
-                            LabeledContent("Sabah Saatleri") {
-                                TextField("7, 8, 9, 10, 11", text: $morningTxt)
-                                    .textFieldStyle(.roundedBorder).frame(maxWidth: 180)
+                            Text("Kontroller her gun bu saatlerde calisir (gunde \(config.check_times.count) kontrol). Her kontrol bir OTP SMS'i tetikler.")
+                                .font(.caption).foregroundStyle(.secondary)
+                            if config.check_times.isEmpty {
+                                Text("Henuz kontrol saati eklenmedi")
+                                    .font(.callout).foregroundStyle(.tertiary)
+                            } else {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 92), spacing: 8)], alignment: .leading, spacing: 8) {
+                                    ForEach(config.check_times, id: \.self) { t in
+                                        HStack(spacing: 4) {
+                                            Text(t).font(.callout.monospacedDigit())
+                                            Button(action: { config.check_times.removeAll { $0 == t } }) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .foregroundStyle(.secondary)
+                                            }.buttonStyle(.borderless).help("Bu saati kaldir")
+                                        }
+                                        .padding(.horizontal, 10).padding(.vertical, 5)
+                                        .background(Capsule().fill(Color.blue.opacity(0.12)))
+                                    }
+                                }
                             }
-                            LabeledContent("Aksam Saatleri") {
-                                TextField("17, 18, 19, 20, 21", text: $eveningTxt)
-                                    .textFieldStyle(.roundedBorder).frame(maxWidth: 180)
+                            HStack(spacing: 8) {
+                                DatePicker("", selection: $newTime, displayedComponents: .hourAndMinute)
+                                    .labelsHidden()
+                                Button(action: addTime) {
+                                    Label("Saat Ekle", systemImage: "plus.circle.fill")
+                                }
                             }
-                            LabeledContent("Dakikalar") {
-                                TextField("0, 30", text: $minutesTxt)
-                                    .textFieldStyle(.roundedBorder).frame(maxWidth: 180)
-                            }
+                            Divider()
                             LabeledContent("Maks. Gecikme") {
                                 HStack(spacing: 6) {
                                     TextField("", value: $config.random_delay_max, format: .number)
@@ -428,12 +536,15 @@ struct SettingsView: View {
                 }
             }
         }
-        .frame(width: 560, height: 760)
+        .frame(width: 560, height: 820)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            // Sistem Ayarlari'ndan geri donuldugunde izin durumunu tazele
+            fdaGranted = checkFullDiskAccess()
+        }
         .onAppear {
             let c = config
-            morningTxt = c.morning_hours.map(String.init).joined(separator: ", ")
-            eveningTxt = c.evening_hours.map(String.init).joined(separator: ", ")
-            minutesTxt = c.check_minutes.map(String.init).joined(separator: ", ")
+            fdaGranted = checkFullDiskAccess()
+            centerMap()
             // config.json tek dogruluk kaynagidir.
             // launchd durumu ayardan farkliysa launchd'yi ayara uyduruyoruz -
             // tersini yapmak (ayari launchd'den okumak) gecici bir launchctl
@@ -460,11 +571,17 @@ struct SettingsView: View {
     }
 
     func applyCurrentFields() {
-        config.morning_hours = morningTxt.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
-        config.evening_hours = eveningTxt.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
-        config.check_minutes = minutesTxt.split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
         config.userLat = config.lat
         config.userLon = config.lon
+    }
+
+    func addTime() {
+        let comps = Calendar.current.dateComponents([.hour, .minute], from: newTime)
+        let t = String(format: "%02d:%02d", comps.hour ?? 0, comps.minute ?? 0)
+        if !config.check_times.contains(t) {
+            config.check_times.append(t)
+            config.check_times.sort()
+        }
     }
 
     func doSave() {
@@ -478,9 +595,12 @@ struct SettingsView: View {
         statusOk = true
     }
 
-    func openMaps() {
-        let url = "https://www.google.com/maps/@\(config.lat),\(config.lon),15z"
-        if let u = URL(string: url) { NSWorkspace.shared.open(u) }
+    // Haritayi arama merkezine, yaricapi gosterecek yakinlikta konumlandirir
+    func centerMap() {
+        let span = max(Double(config.distance) * 4, 1000)
+        mapCamera = .region(MKCoordinateRegion(
+            center: searchCenter,
+            latitudinalMeters: span, longitudinalMeters: span))
     }
     func doCheck() {
         isChecking = true
@@ -565,7 +685,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 760),
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 820),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered, defer: false)
         window?.title = "DOA Watcher"

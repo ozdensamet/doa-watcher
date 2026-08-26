@@ -89,12 +89,11 @@ gönderilir, e-posta gönderilmez. Son durum `last-state.json` dosyasında tutul
 | Gereksinim | Not |
 |---|---|
 | macOS 14+ | SwiftUI arayüzü ve `launchd` için |
-| Swift derleyici | Xcode veya Command Line Tools (`xcode-select --install`) |
-| Python 3 | macOS ile birlikte gelir, ek paket gerekmez |
+| Komut Satırı Araçları | `xcode-select --install` — Python 3 buradan gelir (ücretsiz, Apple hesabı gerekmez). Kaynaktan derleyecekseniz Swift derleyicisi de bu pakette |
 | DOA hesabı | Telefon numarasıyla kayıtlı olmalı |
 | Mac'te SMS senkronizasyonu | iPhone'daki SMS'ler Mac'e düşmeli (Mesajlar → Metin Mesajı Yönlendirme) |
 | Gmail hesabı + uygulama şifresi | Bildirim e-postaları için |
-| Apple Developer sertifikası | Zorunlu değil ama şiddetle önerilir ([nedeni](#kod-imzalama-ve-tam-disk-erişimi)) |
+| Apple Developer sertifikası | **Yalnızca kaynaktan derleyenler için** önerilir ([nedeni](#kod-imzalama-ve-tam-disk-erişimi)). Hazır sürümü indirenlere gerekmez — imza uygulamanın içinde hazır gelir |
 
 Python tarafında harici bağımlılık yok — yalnızca standart kütüphane
 (`urllib`, `sqlite3`, `smtplib`, `json`) kullanılıyor.
@@ -110,6 +109,21 @@ Normal Gmail şifreniz çalışmaz, "uygulama şifresi" gerekir:
 ---
 
 ## Kurulum
+
+### Yol 1 — Hazır sürüm (derleme ve geliştirici hesabı gerekmez)
+
+1. [Releases](../../releases) sayfasından `DOA-Watcher.zip` dosyasını indirin
+2. Arşivi **ana dizininize** açın — içindeki klasör tam olarak `~/doa-watcher`
+   konumuna oturmalı
+3. `DOAWatcher.app`'i açın, ayarları girip **Kaydet**'e basın — `config.json`
+   otomatik oluşturulur
+
+İlk açılışta macOS "internetten indirilen uygulama" uyarısı gösterirse:
+uygulamaya sağ tıklayıp **Aç** deyin; yeni macOS sürümlerinde ek olarak
+**Sistem Ayarları → Gizlilik ve Güvenlik → Yine de Aç** gerekebilir.
+(Paket noterlenmişse bu uyarı hiç çıkmaz.)
+
+### Yol 2 — Kaynaktan derleme
 
 ```bash
 git clone https://github.com/<kullanici>/doa-watcher.git ~/doa-watcher
@@ -133,6 +147,9 @@ Kurulumdan sonra **Tam Disk Erişimi** vermeniz gerekir, aksi halde OTP okunamaz
 
 **Sistem Ayarları → Gizlilik ve Güvenlik → Tam Disk Erişimi → `+` → `~/doa-watcher/DOAWatcher.app`**
 
+Uygulamanın ana ekranındaki gösterge iznin gerçekte çalışıp çalışmadığını
+söyler; **Sistem Ayarlarını Aç** butonu sizi doğrudan ilgili sayfaya götürür.
+
 ---
 
 ## Yapılandırma
@@ -149,22 +166,24 @@ için repoya girmez. Şablon olarak `config.example.json` kullanın.
 | `lat` / `lon` | number | Arama merkezinin koordinatları |
 | `userLat` / `userLon` | number | Mesafe hesabı için kullanıcı konumu (genelde `lat`/`lon` ile aynı) |
 | `distance` | number | Arama yarıçapı, **metre** cinsinden |
-| `morning_hours` | int[] | Sabah kontrol saatleri, ör. `[9, 10, 11]` |
-| `evening_hours` | int[] | Akşam kontrol saatleri, ör. `[17, 18, 19]` |
-| `check_minutes` | int[] | Her saatte hangi dakikalarda, ör. `[25, 55]` |
+| `check_times` | string[] | Günlük kontrol saatleri, `"SS:DD"` biçiminde, ör. `["09:25", "17:40"]` |
 | `random_delay_max` | number | Kontrol başına eklenecek azami rastgele gecikme (saniye) |
 | `watch_materials` | string[] | İzlenecek malzemeler: `"pet"`, `"glass"` |
 | `full_threshold` | number | Bu doluluk yüzdesinin üstü "dolu" sayılır (varsayılan 90) |
 
-Kontrol saatleri `morning_hours × check_minutes` ve `evening_hours × check_minutes`
-şeklinde çarpılır. Örnek: `[9,10,11] × [25,55]` → günde 6 kontrol (09:25, 09:55,
-10:25, 10:55, 11:25, 11:55).
+`check_times` içindeki her giriş, launchd'ye zamanlanmış bir kontrol olur —
+istediğiniz kadar saat ekleyebilirsiniz. Her kontrol bir OTP SMS'i tetiklediği
+için makul sayıda tutmakta fayda var.
+
+> Eski biçimdeki (`morning_hours` / `evening_hours` / `check_minutes`)
+> `config.json` dosyaları uygulama tarafından okunurken otomatik olarak
+> `check_times` listesine dönüştürülür; ilk Kaydet'te yeni biçimde yazılır.
 
 ### Koordinat bulma
 
-Google Maps'te istediğiniz noktaya sağ tıklayın, en üstteki koordinat çiftine
-tıklayınca panoya kopyalanır. Uygulamadaki **Haritada Göster** butonu da mevcut
-koordinatı haritada açar.
+En kolayı uygulamanın içinden: **Konum** bölümündeki haritayı sürükleyerek
+kırmızı işareti istediğiniz noktaya getirin, koordinatlar otomatik dolar.
+İsterseniz enlem/boylam alanlarına elle de girebilirsiniz.
 
 `distance` alanı, girdiğiniz merkez noktadan kaç metre uzağa kadar makine
 aranacağını belirler. 2000-3000 metre çoğu ilçe merkezi için makul bir değerdir.
@@ -179,9 +198,20 @@ aranacağını belirler. 2000-3000 metre çoğu ilçe merkezi için makul bir de
 
 - **Ana anahtar** — otomatik takibi açıp kapatır. Anında uygulanır, Kaydet'e
   basmaya gerek yok. Açıkken bir sonraki kontrol saatini gösterir.
-- **Hesap** — telefon, e-posta, Gmail uygulama şifresi
-- **Konum** — enlem, boylam, arama yarıçapı
-- **Zamanlama** — sabah/akşam saatleri, dakikalar, azami gecikme
+- **Tam Disk Erişimi göstergesi** — iznin gerçekte çalışıp çalışmadığını
+  gösterir (Messages veritabanını açmayı deneyerek ölçer; Sistem Ayarları'ndaki
+  tik işaretinden daha güvenilirdir, [nedeni](#kod-imzalama-ve-tam-disk-erişimi)).
+  İzin yoksa tek tıkla ilgili ayar sayfasını açar; ayarlardan dönünce durum
+  kendiliğinden tazelenir.
+- **Hesap** — telefon, e-posta, Gmail uygulama şifresi. Şifre alanının altındaki
+  bağlantı Google'ın uygulama şifresi sayfasını açar.
+- **Konum** — gömülü Apple haritası: haritayı sürükleyerek kırmızı işareti
+  arama merkezine getirin, koordinatlar canlı güncellenir; mavi daire arama
+  yarıçapını gösterir. Koordinatlar elle de girilebilir; **Merkeze Git**
+  haritayı seçili merkeze döndürür.
+- **Zamanlama** — günlük kontrol saatleri listesi: saat seçip **Saat Ekle** ile
+  istediğiniz kadar ekleyin, çipin üzerindeki `x` ile çıkarın. Ayrıca azami
+  rastgele gecikme buradan ayarlanır.
 - **Şimdi Kontrol Et** — anında bir kontrol başlatır (gecikmesiz). Her adım
   canlı olarak ekranda ikonlarla akar: OTP gönderildi → okundu → token alındı →
   makineler sorgulandı → e-posta gönderildi.
@@ -224,8 +254,11 @@ cat ~/doa-watcher/logs/launchd-stderr.log          # launchd hataları
 ./build.sh
 ```
 
-Betik üç iş yapar: Swift kaynağını derler, Developer ID sertifikanızla imzalar,
-imzayı doğrular. Sertifika otomatik bulunur; birden fazla varsa seçmek için:
+Betik dört iş yapar: `.app` paket iskeletini ve `Info.plist`'i üretir (repo'da
+derleme çıktısı tutulmaz, temiz klonda her şey buradan çıkar), `logo.jpeg`'den
+uygulama ikonunu oluşturur (`sips` + `iconutil`, ikisi de macOS ile gelir),
+Swift kaynağını derleyip Developer ID sertifikanızla imzalar ve imzayı doğrular.
+Sertifika otomatik bulunur; birden fazla varsa seçmek için:
 
 ```bash
 DOA_SIGN_CERT="Developer ID Application: ADINIZ (TEAMID)" ./build.sh
@@ -243,12 +276,33 @@ Elle derlemek isterseniz:
 swiftc -swift-version 5 -O \
   -o DOAWatcher.app/Contents/MacOS/DOAWatcher \
   DOAWatcher.swift \
-  -framework SwiftUI -framework AppKit
+  -framework SwiftUI -framework AppKit -framework MapKit
 
 codesign -s "Developer ID Application: ..." -f --timestamp DOAWatcher.app
 ```
 
 > **Ad-hoc imza (`codesign -s -`) kullanmayın.** Nedeni aşağıda.
+
+### Dağıtım paketi oluşturma
+
+```bash
+./build.sh --release
+```
+
+Normal derlemenin ardından GitHub Releases'a yüklenecek `DOA-Watcher.zip`
+paketini üretir: imzalı `DOAWatcher.app`, `doa-checker.py`, yapılandırma
+şablonu, README ve LICENSE tek klasörde. İndiren kişi arşivi ana dizinine
+açar ve doğrudan kullanır — derleme yapmaz, sertifikaya ihtiyaç duymaz.
+
+İndirilen uygulamanın Gatekeeper uyarısı olmadan açılması için paketi
+noterletebilirsiniz (Apple Developer üyeliği yeterli, kimliği bir kez kaydedin):
+
+```bash
+xcrun notarytool store-credentials doa-notary \
+  --apple-id APPLE_ID --team-id TEAMID --password UYGULAMAYA_OZEL_SIFRE
+
+NOTARY_PROFILE=doa-notary ./build.sh --release
+```
 
 ---
 
@@ -430,6 +484,11 @@ Kod, okuduğu mesajın 90 saniyeden eski olmamasını şart koşuyor — böylec
 
 ## Kod imzalama ve Tam Disk Erişimi
 
+> Bu bölüm uygulamayı **kaynaktan derleyenleri** ilgilendirir. Hazır sürümü
+> indiren kullanıcının sertifikaya veya geliştirici hesabına ihtiyacı yoktur —
+> imza `.app` paketinin içinde hazır gelir, kullanıcı yalnızca Tam Disk
+> Erişimi iznini kendisi verir.
+
 Bu projedeki en sinsi sorun buydu; ayrıntısıyla yazıyorum çünkü benzer bir işe
 girişen herkes aynı duvara toslar.
 
@@ -531,8 +590,8 @@ Zamanlama dosyası uygulama tarafından üretilir:
 <key>StartCalendarInterval</key>
 <array>
     <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>25</integer></dict>
-    <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>55</integer></dict>
-    <!-- config.json'daki saat × dakika çarpımı kadar giriş -->
+    <dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>40</integer></dict>
+    <!-- config.json'daki her kontrol saati için bir giriş -->
 </array>
 ```
 
@@ -565,8 +624,10 @@ eder. Mac'in sürekli açık olduğu bir kurulum (ör. Mac Mini) varsayılmışt
 ```
 doa-watcher/
 ├── README.md               # bu dosya - tüm proje dokümantasyonu
+├── LICENSE                 # MIT
 ├── .gitignore
-├── build.sh                # derleme + imzalama
+├── build.sh                # paket iskeleti + ikon + derleme + imzalama + dağıtım paketi
+├── logo.jpeg               # uygulama ikonunun kaynağı
 ├── config.example.json     # yapılandırma şablonu
 ├── DOAWatcher.swift        # SwiftUI arayüz + launchd yönetimi + arka plan modu
 ├── doa-checker.py          # API istemcisi, OTP okuma, e-posta gönderimi
@@ -574,7 +635,7 @@ doa-watcher/
 ├── config.json             # (git dışı) gerçek ayarlar - ŞİFRE İÇERİR
 ├── last-state.json         # (git dışı) son bilinen durum
 ├── logs/                   # (git dışı) günlük loglar
-├── DOAWatcher.app/         # (git dışı) derleme çıktısı
+├── DOAWatcher.app/         # (git dışı) derleme çıktısı - build.sh üretir
 └── archive/                # (git dışı) ilk denemeler - Playwright tabanlı yaklaşım
 ```
 
@@ -732,5 +793,6 @@ sürekli, sessiz ve teşhisi zor kırılmalara yol açar.
 
 ## Lisans
 
-Kişisel kullanım için yazılmıştır. DOA API'si resmî olarak belgelenmiş bir
-arayüz değildir; kullanım sorumluluğu size aittir.
+[MIT](LICENSE) — dilediğiniz gibi kullanın, değiştirin, dağıtın; lisans notunu
+korumanız yeterli. DOA API'si resmî olarak belgelenmiş bir arayüz değildir;
+kullanım sorumluluğu size aittir.

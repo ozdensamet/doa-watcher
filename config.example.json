@@ -11,9 +11,7 @@
   "userLon": 28.9784,
   "distance": 2000,
 
-  "morning_hours": [9, 10, 11],
-  "evening_hours": [17, 18, 19],
-  "check_minutes": [25, 55],
+  "check_times": ["09:25", "10:55", "17:25", "18:55"],
   "random_delay_max": 600,
 
   "watch_materials": ["pet", "glass"],

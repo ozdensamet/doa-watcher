@@ -18,6 +18,7 @@ last-state.json
 # Derleme ciktilari
 # ============================================
 DOAWatcher.app/
+DOA-Watcher.zip
 *.o
 *.dSYM/
 build/
