@@ -1,0 +1,41 @@
+# ============================================
+# SIRLAR - asla repoya girmemeli
+# ============================================
+config.json
+email-config.json
+tokens.json
+*.secret
+*-config.json
+!config.example.json
+
+# ============================================
+# Calisma zamani ciktilari
+# ============================================
+logs/
+last-state.json
+
+# ============================================
+# Derleme ciktilari
+# ============================================
+DOAWatcher.app/
+*.o
+*.dSYM/
+build/
+.build/
+
+# ============================================
+# Eski denemeler ve bagimliliklar
+# ============================================
+archive/
+node_modules/
+chrome-profile/
+__pycache__/
+*.pyc
+
+# ============================================
+# macOS
+# ============================================
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes

@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+
+  "phone": "5XXXXXXXXX",
+  "email": "ornek@gmail.com",
+  "app_password": "xxxx xxxx xxxx xxxx",
+
+  "lat": 41.0082,
+  "lon": 28.9784,
+  "userLat": 41.0082,
+  "userLon": 28.9784,
+  "distance": 2000,
+
+  "morning_hours": [9, 10, 11],
+  "evening_hours": [17, 18, 19],
+  "check_minutes": [25, 55],
+  "random_delay_max": 600,
+
+  "watch_materials": ["pet", "glass"],
+  "full_threshold": 90
+}
