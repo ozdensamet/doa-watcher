@@ -2,6 +2,7 @@
 # SIRLAR - asla repoya girmemeli
 # ============================================
 config.json
+CLAUDE.md
 email-config.json
 tokens.json
 *.secret
