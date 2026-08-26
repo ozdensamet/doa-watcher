@@ -281,7 +281,7 @@ swiftc -swift-version 5 -O \
   DOAWatcher.swift \
   -framework SwiftUI -framework AppKit -framework MapKit
 
-codesign -s "Developer ID Application: ..." -f --timestamp DOAWatcher.app
+codesign -s "Developer ID Application: ..." -f --timestamp --options runtime DOAWatcher.app
 ```
 
 > **Ad-hoc imza (`codesign -s -`) kullanmayın.** Nedeni aşağıda.

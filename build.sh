@@ -82,7 +82,8 @@ swiftc -swift-version 5 -O \
   -framework SwiftUI -framework AppKit -framework MapKit
 
 echo "3/4 Imzalaniyor..."
-codesign -s "$CERT" -f --timestamp "$APP"
+# --options runtime (hardened runtime) noterleme icin zorunlu
+codesign -s "$CERT" -f --timestamp --options runtime "$APP"
 
 echo "4/4 Dogrulaniyor..."
 codesign -v "$APP" && echo "   imza gecerli"
