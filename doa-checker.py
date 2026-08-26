@@ -254,44 +254,76 @@ def analyze_machines(data):
         })
     return {"machines": results, "any_available": any_available}
 
+EMAIL_MATERIALS = [("pet", "PET"), ("glass", "Cam"), ("aluminum", "Alüminyum")]
+
 def build_email_html(analysis):
     now = datetime.now().strftime("%d.%m.%Y %H:%M")
+    machines = sorted(analysis["machines"], key=lambda m: m["distance_km"] or 0)
+    available_count = sum(1 for m in machines if any(m["materials_available"].values()))
+
+    cell_base = "padding:10px 8px;border-top:1px solid #f0f0f0;text-align:center;font-size:14px"
+
+    def material_cell(m, key):
+        b = m["bins"].get(key)
+        if not b:
+            return f'<td style="{cell_base};color:#9ca3af">&ndash;</td>'
+        if b["available"]:
+            return f'<td style="{cell_base};color:#15803d;font-weight:700">%{b["level"]}</td>'
+        if b["level"] >= FULL_THRESHOLD:
+            return f'<td style="{cell_base};color:#dc2626">%{b["level"]}</td>'
+        return f'<td style="{cell_base};color:#9ca3af">%{b["level"]}</td>'
+
     rows = ""
-    for m in analysis["machines"]:
-        online_txt = "ACIK" if m["online"] else "KAPALI"
-        online_color = "#22c55e" if m["online"] else "#ef4444"
-        pet_info = "-"
-        glass_info = "-"
-        if "pet" in m["bins"]:
-            pet = m["bins"]["pet"]
-            pet_avail = m["materials_available"].get("pet", False)
-            pet_color = "#22c55e" if pet_avail else "#ef4444"
-            pet_info = f'<span style="color:{pet_color}">%{pet["level"]}</span>'
-        if "glass" in m["bins"]:
-            glass = m["bins"]["glass"]
-            glass_avail = m["materials_available"].get("glass", False)
-            glass_color = "#22c55e" if glass_avail else "#ef4444"
-            glass_info = f'<span style="color:{glass_color}">%{glass["level"]}</span>'
+    for m in machines:
+        if m["online"]:
+            badge = ('<span style="background:#dcfce7;color:#166534;padding:2px 10px;'
+                     'border-radius:999px;font-size:12px;font-weight:600">AÇIK</span>')
+        else:
+            badge = ('<span style="background:#fee2e2;color:#b91c1c;padding:2px 10px;'
+                     'border-radius:999px;font-size:12px;font-weight:600">KAPALI</span>')
+        cells = "".join(material_cell(m, key) for key, _ in EMAIL_MATERIALS)
         rows += f'''<tr>
-            <td style="padding:8px;border:1px solid #ddd">{m["name"]}</td>
-            <td style="padding:8px;border:1px solid #ddd;color:{online_color};font-weight:bold">{online_txt}</td>
-            <td style="padding:8px;border:1px solid #ddd;text-align:center">{pet_info}</td>
-            <td style="padding:8px;border:1px solid #ddd;text-align:center">{glass_info}</td>
-            <td style="padding:8px;border:1px solid #ddd">{m["distance_km"]} km</td>
+            <td style="padding:10px 8px 10px 20px;border-top:1px solid #f0f0f0">
+                <div style="font-size:14px;font-weight:600;color:#111827">{m["name"]}</div>
+                <div style="font-size:12px;color:#6b7280;margin-top:2px">{m["distance_km"]} km</div>
+            </td>
+            <td style="padding:10px 8px;border-top:1px solid #f0f0f0;text-align:center">{badge}</td>
+            {cells}
         </tr>'''
-    html = f'''<html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-    <h2 style="color:#1a56db">DOA Makine Durumu - {now}</h2>
-    <table style="width:100%;border-collapse:collapse;margin-top:10px">
-        <tr style="background:#f3f4f6">
-            <th style="padding:8px;border:1px solid #ddd;text-align:left">Makine</th>
-            <th style="padding:8px;border:1px solid #ddd">Durum</th>
-            <th style="padding:8px;border:1px solid #ddd">PET</th>
-            <th style="padding:8px;border:1px solid #ddd">Cam</th>
-            <th style="padding:8px;border:1px solid #ddd">Mesafe</th>
-        </tr>
-        {rows}
-    </table>
-    <p style="color:#666;font-size:12px;margin-top:15px">Otomatik kontrol - DOA Watcher</p>
+
+    th_base = ("padding:10px 8px;font-size:11px;font-weight:600;color:#6b7280;"
+               "text-transform:uppercase;letter-spacing:0.4px")
+    material_headers = "".join(
+        f'<th style="{th_base};text-align:center">{label}</th>' for _, label in EMAIL_MATERIALS)
+
+    if available_count:
+        summary, summary_bg, summary_color = (
+            f"{available_count} makinede uygun göz var", "#dcfce7", "#166534")
+    else:
+        summary, summary_bg, summary_color = ("Şu an uygun göz yok", "#fef3c7", "#92400e")
+
+    html = f'''<html><body style="margin:0;padding:0;background:#f3f4f6">
+    <div style="max-width:640px;margin:0 auto;padding:24px 12px;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif">
+      <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+        <div style="background:#166534;padding:18px 24px">
+          <div style="color:#ffffff;font-size:19px;font-weight:700">DOA Watcher</div>
+          <div style="color:#bbf7d0;font-size:13px;margin-top:2px">Makine durumu &middot; {now}</div>
+        </div>
+        <div style="margin:16px 20px 0;padding:10px 16px;background:{summary_bg};color:{summary_color};border-radius:8px;font-size:14px;font-weight:600">{summary}</div>
+        <table style="width:100%;border-collapse:collapse;margin-top:8px">
+          <tr>
+            <th style="{th_base};text-align:left;padding-left:20px">Makine</th>
+            <th style="{th_base};text-align:center">Durum</th>
+            {material_headers}
+          </tr>
+          {rows}
+        </table>
+        <div style="padding:12px 20px;border-top:1px solid #f0f0f0;font-size:12px;color:#9ca3af">
+          Yeşil: göz uygun &middot; Kırmızı: dolu &middot; Gri: kapalı veya bu makinede yok
+        </div>
+      </div>
+      <div style="text-align:center;color:#9ca3af;font-size:12px;margin-top:12px">Otomatik kontrol &middot; DOA Watcher</div>
+    </div>
     </body></html>'''
     return html
 

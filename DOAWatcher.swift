@@ -390,9 +390,11 @@ struct SettingsView: View {
                                     config.lat = (context.camera.centerCoordinate.latitude * 1e6).rounded() / 1e6
                                     config.lon = (context.camera.centerCoordinate.longitude * 1e6).rounded() / 1e6
                                 }
-                                Image(systemName: "scope")
-                                    .font(.system(size: 24, weight: .semibold))
-                                    .foregroundStyle(.red)
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 12, height: 12)
+                                    .overlay(Circle().stroke(.white, lineWidth: 2.5))
+                                    .shadow(color: .black.opacity(0.35), radius: 2)
                                     .allowsHitTesting(false)
                             }
                             .frame(height: 200)
@@ -416,6 +418,19 @@ struct SettingsView: View {
                             }
                             Text("Bu yaricap icindeki DOA makineleri aranir")
                                 .font(.caption).foregroundStyle(.tertiary)
+                        }.padding(6)
+                    }
+                    // Izlenen malzemeler
+                    GroupBox {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Izlenen Malzemeler", systemImage: "arrow.3.trianglepath").font(.headline)
+                            HStack(spacing: 18) {
+                                Toggle("PET", isOn: materialBinding("pet"))
+                                Toggle("Cam", isOn: materialBinding("glass"))
+                                Toggle("Aluminyum", isOn: materialBinding("aluminum"))
+                            }.toggleStyle(.checkbox)
+                            Text("Secili turlerden en az birinin gozu uygunsa bildirim gonderilir. E-postada uc turun durumu da gorunur.")
+                                .font(.caption).foregroundStyle(.secondary)
                         }.padding(6)
                     }
                     // Zamanlama
@@ -573,6 +588,19 @@ struct SettingsView: View {
     func applyCurrentFields() {
         config.userLat = config.lat
         config.userLon = config.lon
+    }
+
+    func materialBinding(_ key: String) -> Binding<Bool> {
+        Binding(
+            get: { config.watch_materials.contains(key) },
+            set: { on in
+                if on {
+                    if !config.watch_materials.contains(key) { config.watch_materials.append(key) }
+                } else {
+                    config.watch_materials.removeAll { $0 == key }
+                }
+            }
+        )
     }
 
     func addTime() {

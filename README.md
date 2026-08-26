@@ -168,7 +168,7 @@ için repoya girmez. Şablon olarak `config.example.json` kullanın.
 | `distance` | number | Arama yarıçapı, **metre** cinsinden |
 | `check_times` | string[] | Günlük kontrol saatleri, `"SS:DD"` biçiminde, ör. `["09:25", "17:40"]` |
 | `random_delay_max` | number | Kontrol başına eklenecek azami rastgele gecikme (saniye) |
-| `watch_materials` | string[] | İzlenecek malzemeler: `"pet"`, `"glass"` |
+| `watch_materials` | string[] | İzlenecek malzemeler: `"pet"`, `"glass"`, `"aluminum"` — arayüzdeki onay kutularıyla da seçilebilir |
 | `full_threshold` | number | Bu doluluk yüzdesinin üstü "dolu" sayılır (varsayılan 90) |
 
 `check_times` içindeki her giriş, launchd'ye zamanlanmış bir kontrol olur —
@@ -209,6 +209,9 @@ aranacağını belirler. 2000-3000 metre çoğu ilçe merkezi için makul bir de
   arama merkezine getirin, koordinatlar canlı güncellenir; mavi daire arama
   yarıçapını gösterir. Koordinatlar elle de girilebilir; **Merkeze Git**
   haritayı seçili merkeze döndürür.
+- **İzlenen Malzemeler** — PET / Cam / Alüminyum onay kutuları. Seçili
+  türlerden en az birinin gözü uygunsa bildirim gider; e-postada üç türün
+  durumu da her zaman görünür.
 - **Zamanlama** — günlük kontrol saatleri listesi: saat seçip **Saat Ekle** ile
   istediğiniz kadar ekleyin, çipin üzerindeki `x` ile çıkarın. Ayrıca azami
   rastgele gecikme buradan ayarlanır.
